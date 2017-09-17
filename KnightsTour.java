@@ -1,7 +1,8 @@
 package com.eecs592.kt;
 
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import java.util.Stack;
 
 class Square{
@@ -48,15 +49,18 @@ public class KnightsTour {
 		//printDegreeMatrix("fixed");
 	}	
 	
-	private static List<int[]> computeDynamicDegree(int row, int col, int pathLength) {
-		List<int[]> validMoves = new LinkedList<>();
+	private static List<int[]> computeValidMoves(int row, int col, int pathLength) {
+		List<int[]> validMoves = new ArrayList<>();
 		for(int k = 0; k < MOVES.length; k++) {
 			int rowNew = row + MOVES[k][0], colNew = col + MOVES[k][1];
 			if(rowNew <= sizeOfBoard && rowNew >= 1 && 
 					colNew <= sizeOfBoard && colNew >= 1) {
-				if(!board[rowNew][colNew].isVisited || (pathLength > 10 && rowNew == 2 && colNew == 3)) {
+				if(pathLength == 63 && rowNew == 2 && colNew == 3) {
 					validMoves.add(MOVES[k]);
+					System.out.println("Find one end node.");
+					break;
 				}
+				else if(!board[rowNew][colNew].isVisited) 	validMoves.add(MOVES[k]);
 			}
 		}	
 		return validMoves;
@@ -74,82 +78,141 @@ public class KnightsTour {
 		//printDegreeMatrix("dynamic");
 	}
 	
-	private static void strategies() {
-		System.out.println("KT: " + sizeOfBoard + " x " + sizeOfBoard + " strategy = 1, start = 2,3");
-		List<String> res = new LinkedList<>();
-		board[2][3].isVisited = true;
+	private static List<int[]> decideTheNextPosition(List<int[]> validMoves, int row, int col){
+		List<int[]> minFixedDegreePos = new ArrayList<>();
+		int minFixedDegree = board[row + validMoves.get(0)[0]][col + validMoves.get(0)[1]].fixedDegree;
 		
+		for(int i = 1; i < validMoves.size(); i++) {
+			minFixedDegree = Math.min(minFixedDegree, board[row + validMoves.get(i)[0]][col + validMoves.get(i)[1]].fixedDegree);
+		}
+		
+		for(int i = 0; i < validMoves.size(); i++) {
+			if(board[row + validMoves.get(i)[0]][col + validMoves.get(i)[1]].fixedDegree == minFixedDegree)
+				minFixedDegreePos.add(new int[] {row + validMoves.get(i)[0], col + validMoves.get(i)[1]});
+		}
+		return minFixedDegreePos;
+	}
+	
+	private static List<List<int[]>> strategies() {
+		
+		
+		List<List<int[]>> res = new ArrayList<>();
+		List<int[]>	path = new ArrayList<>();
 		Stack<Square> stack = new Stack<>();
-		Stack<StringBuilder>	path = new Stack<>();
-		stack.push(board[2][3]);
-		path.push(new StringBuilder("2,3"));
-		numOfMoves--;
-		updateDynamicDegree(2, 3);	
 		
 		int row = 2, col = 3;
-		while(!stack.isEmpty()){
-			while(stack.peek().dynamicDegree == 0 || computeDynamicDegree(stack.peek().row, stack.peek().col, path.peek().length()).size() == 0) {
-				System.out.println("stack.peek().dynamicDegree == 0");
-				Square s = stack.pop();
-				path.pop();
-				s.isVisited = false;
-				updateDynamicDegree(row, col);
-				numOfMoves++;
-				if(stack.isEmpty())	break;
-			}
+		Square curNode = board[2][3];
+		Square preNode = null;
+		updateDynamicDegree(2, 3);
+		
+		while(!stack.isEmpty() || numOfMoves > 0){
 			
-			if(stack.isEmpty())	break;
-			List<int[]> validMoves = new LinkedList<>();
-			Square currentSquare = stack.pop();
-			StringBuilder currentPath = path.pop();
-			row = currentSquare.row;
-			col = currentSquare.col;
-			//System.out.println("current square = " + row + " " + col);
-			//System.out.println("current path = " + currentPath);
-			validMoves = computeDynamicDegree(row, col, currentPath.length());
-			List<int[]> minFixedDegreePos = new LinkedList<>();
-			int minFixedDegree = board[row + validMoves.get(0)[0]][col + validMoves.get(0)[1]].fixedDegree;
-			
-			for(int i = 1; i < validMoves.size(); i++) {
-				minFixedDegree = Math.min(minFixedDegree, board[row + validMoves.get(i)[0]][col + validMoves.get(i)[1]].fixedDegree);
-			}
-			//System.out.println("minFixedDegree = " + minFixedDegree);
-			for(int i = 0; i < validMoves.size(); i++) {
-				if(board[row + validMoves.get(i)[0]][col + validMoves.get(i)[1]].fixedDegree == minFixedDegree)
-					minFixedDegreePos.add(new int[] {row + validMoves.get(i)[0], col + validMoves.get(i)[1]});
-			}
-			
-			for(int i = 0; i < minFixedDegreePos.size(); i++) {
-				row = minFixedDegreePos.get(i)[0];	
-				col = minFixedDegreePos.get(i)[1];
-				//System.out.println("The square with the minumum fixed degree: " + row + " " + col);
-				numOfMoves--;
-				updateDynamicDegree(row, col);
-				board[row][col].isVisited = true;
-				StringBuilder newPath = new StringBuilder(currentPath + " " + row + "," + col);
-				
-				if(row == 2 && col == 3) {
-					res.add(newPath.toString());
-					System.out.println(newPath.toString());
-					System.out.println(newPath.length());
-					stack.pop();
-					path.pop();
-				}else {
+			//System.out.println("Enter the strategy function.");
+			while(path.size() < 64 && curNode != null) {
+				row = curNode.row;
+				col = curNode.col;
 				stack.push(board[row][col]);
-				path.push(newPath);
+				path.add(new int[] {row, col});
+				for(int i = 0; i < path.size(); i++)		System.out.print(path.get(i)[0] + "," + path.get(i)[1] + " ");
+				System.out.println();
+				System.out.println("path size == " + path.size());
+				board[row][col].isVisited = true;
+				updateDynamicDegree(row, col);
+				numOfMoves--;
+				
+				List<int[]> validMoves = computeValidMoves(row, col, path.size());
+				if(validMoves.size() == 0)	break;
+				//System.out.println("validMoves.size == " + validMoves.size());
+				
+				List<int[]> minFixedDegreePos = new ArrayList<>();
+				int[] randomNextNodePos = new int[2];
+				Square ramdomNextNode;
+				
+				do {
+					System.out.println("Enter the decide part.");
+					minFixedDegreePos = decideTheNextPosition(validMoves, row, col);
+					randomNextNodePos = minFixedDegreePos.get(new Random().nextInt(minFixedDegreePos.size()));
+					//System.out.println("Temp value == " + randomNextNodePos[0] + "," + randomNextNodePos[1]);
+					ramdomNextNode = new Square(randomNextNodePos[0], randomNextNodePos[1]);
+				}while(ramdomNextNode == preNode);
+				curNode = ramdomNextNode;
+			}
+			
+			if(curNode == null) {
+				if(stack.isEmpty()) {
+					System.out.println("There is no solution.");
+					break;
 				}
+				curNode = stack.peek();
+				row = curNode.row;
+				col = curNode.col;
+				
+				List<int[]> validMoves = computeValidMoves(row, col, path.size());
+				if(validMoves.size() == 0)	break;
+				//System.out.println("validMoves.size == " + validMoves.size());
+				
+				List<int[]> minFixedDegreePos = new ArrayList<>();
+				int[] randomNextNodePos = new int[2];
+				Square ramdomNextNode;
+				int count = 0;
+				
+				do {
+					//System.out.println("Enter the decide part.");
+					minFixedDegreePos = decideTheNextPosition(validMoves, row, col);
+					randomNextNodePos = minFixedDegreePos.get(new Random().nextInt(minFixedDegreePos.size()));
+					//System.out.println("Temp value == " + randomNextNodePos[0] + "," + randomNextNodePos[1]);
+					ramdomNextNode = new Square(randomNextNodePos[0], randomNextNodePos[1]);
+					count ++;
+				}while(ramdomNextNode.row == preNode.row && ramdomNextNode.col != preNode.col && count < 30);
+				
+				if(ramdomNextNode.row != preNode.row && ramdomNextNode.col != preNode.col) {
+					System.out.println("preNode:" + preNode.row + "," + preNode.col);
+					System.out.println("Choose a new node: " + ramdomNextNode.row + "," + ramdomNextNode.col);
+					System.out.println("The second solution.");
+					curNode = ramdomNextNode;
+					continue;
+				}
+			}
+			
+			curNode = stack.peek();
+			row = curNode.row;
+			col = curNode.col;
+				
+			if(path.size() == 64 && row == 2 && col == 3) {
+				System.out.println("This is a right solution!");
+				res.add(new ArrayList<int[]>(path));
+				
+				for(int i = 0; i < path.size(); i++)		System.out.print(path.get(i) + " ");
+				System.out.println();
 				
 			}
+			
+			curNode.isVisited = false;
+			preNode = curNode;
+			stack.pop();
+			path.remove(path.size() - 1);
+			System.out.println("Pop this node: " + curNode.row + "," + curNode.col);
+			numOfMoves++;
+			//updateDynamicDegree(row, col);
+			curNode = null; 			
 		}
+		return res;
 	}
 	
 	
 	public static void main(String[] args) {
+		List<List<int[]>> res = new ArrayList<>();
 		generateBoard(sizeOfBoard, board);
 		computeFixedDegrees();
-		strategies();
+		res = strategies();
+		for(int i = 0; i < res.size(); i++) {
+			System.out.println("KT: " + sizeOfBoard + " x " + sizeOfBoard + " strategy = 1, start = 2,3");
+			System.out.print(i);
+			System.out.println(res.get(i));
+		}
 	}
 	
+	/*
 	private static void printDegreeMatrix(String s) {
 		// Print 2-d array numOfFixedDegree.
 		System.out.println("The " + sizeOfBoard + " * " + sizeOfBoard + " " + s + " degree matrix is:");
@@ -161,5 +224,6 @@ public class KnightsTour {
 			System.out.println();
 		}
 	}
+	*/
 
 }
