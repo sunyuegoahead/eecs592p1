@@ -2,7 +2,6 @@ package com.eecs592.kt;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 import java.util.Stack;
 
 class Square{
@@ -19,7 +18,7 @@ class Square{
 public class KnightsTour {
 
 	private static int sizeOfBoard = 8;
-	private static int numOfMoves = 1000;
+	private static int numOfMoves = 1000000;
 	private static Square[][] board = new Square[sizeOfBoard + 1][sizeOfBoard + 1];	// Start from 1.
 	
 	private static final int[][] MOVES = { {1, -2}, {2, -1}, {2, 1}, {1, 2}, {-1, 2}, {-2, 1}, {-2, -1}, {-1, -2} };
@@ -55,9 +54,9 @@ public class KnightsTour {
 			int rowNew = row + MOVES[k][0], colNew = col + MOVES[k][1];
 			if(rowNew <= sizeOfBoard && rowNew >= 1 && 
 					colNew <= sizeOfBoard && colNew >= 1) {
-				if(pathLength == 63 && rowNew == 2 && colNew == 3) {
+				if(pathLength == 64 && rowNew == 2 && colNew == 3) {
 					validMoves.add(MOVES[k]);
-					System.out.println("Find one end node.");
+					//System.out.println("Find one end node.");
 					break;
 				}
 				else if(!board[rowNew][colNew].isVisited) 	validMoves.add(MOVES[k]);
@@ -95,107 +94,86 @@ public class KnightsTour {
 	
 	private static List<List<int[]>> strategies() {
 		
-		
 		List<List<int[]>> res = new ArrayList<>();
 		List<int[]>	path = new ArrayList<>();
-		Stack<Square> stack = new Stack<>();
+		Stack<Square> stack = new Stack<>();		//Storing the parents and neighbors.
+		int[] count = new int[66];
 		
 		int row = 2, col = 3;
-		Square curNode = board[2][3];
-		Square preNode = null;
+		stack.push(board[2][3]);
+		count[0] = 1;
+		int rightIndex = 1;
 		updateDynamicDegree(2, 3);
-		
-		while(!stack.isEmpty() || numOfMoves > 0){
+	
+		while(!stack.isEmpty() && numOfMoves > 0){
 			
-			//System.out.println("Enter the strategy function.");
-			while(path.size() < 64 && curNode != null) {
-				row = curNode.row;
-				col = curNode.col;
-				stack.push(board[row][col]);
-				path.add(new int[] {row, col});
-				for(int i = 0; i < path.size(); i++)		System.out.print(path.get(i)[0] + "," + path.get(i)[1] + " ");
-				System.out.println();
-				System.out.println("path size == " + path.size());
-				board[row][col].isVisited = true;
-				updateDynamicDegree(row, col);
-				numOfMoves--;
-				
-				List<int[]> validMoves = computeValidMoves(row, col, path.size());
-				if(validMoves.size() == 0)	break;
-				//System.out.println("validMoves.size == " + validMoves.size());
-				
-				List<int[]> minFixedDegreePos = new ArrayList<>();
-				int[] randomNextNodePos = new int[2];
-				Square ramdomNextNode;
-				
-				do {
-					System.out.println("Enter the decide part.");
-					minFixedDegreePos = decideTheNextPosition(validMoves, row, col);
-					randomNextNodePos = minFixedDegreePos.get(new Random().nextInt(minFixedDegreePos.size()));
-					//System.out.println("Temp value == " + randomNextNodePos[0] + "," + randomNextNodePos[1]);
-					ramdomNextNode = new Square(randomNextNodePos[0], randomNextNodePos[1]);
-				}while(ramdomNextNode == preNode);
-				curNode = ramdomNextNode;
-			}
-			
-			if(curNode == null) {
-				if(stack.isEmpty()) {
-					System.out.println("There is no solution.");
-					break;
-				}
-				curNode = stack.peek();
-				row = curNode.row;
-				col = curNode.col;
-				
-				List<int[]> validMoves = computeValidMoves(row, col, path.size());
-				if(validMoves.size() == 0)	break;
-				//System.out.println("validMoves.size == " + validMoves.size());
-				
-				List<int[]> minFixedDegreePos = new ArrayList<>();
-				int[] randomNextNodePos = new int[2];
-				Square ramdomNextNode;
-				int count = 0;
-				
-				do {
-					//System.out.println("Enter the decide part.");
-					minFixedDegreePos = decideTheNextPosition(validMoves, row, col);
-					randomNextNodePos = minFixedDegreePos.get(new Random().nextInt(minFixedDegreePos.size()));
-					//System.out.println("Temp value == " + randomNextNodePos[0] + "," + randomNextNodePos[1]);
-					ramdomNextNode = new Square(randomNextNodePos[0], randomNextNodePos[1]);
-					count ++;
-				}while(ramdomNextNode.row == preNode.row && ramdomNextNode.col != preNode.col && count < 30);
-				
-				if(ramdomNextNode.row != preNode.row && ramdomNextNode.col != preNode.col) {
-					System.out.println("preNode:" + preNode.row + "," + preNode.col);
-					System.out.println("Choose a new node: " + ramdomNextNode.row + "," + ramdomNextNode.col);
-					System.out.println("The second solution.");
-					curNode = ramdomNextNode;
-					continue;
-				}
-			}
-			
-			curNode = stack.peek();
+			//System.out.println("---------------");
+			//System.out.println("Number: " + numOfMoves);
+			Square curNode = stack.pop();
 			row = curNode.row;
 			col = curNode.col;
-				
-			if(path.size() == 64 && row == 2 && col == 3) {
-				System.out.println("This is a right solution!");
-				res.add(new ArrayList<int[]>(path));
-				
-				for(int i = 0; i < path.size(); i++)		System.out.print(path.get(i) + " ");
-				System.out.println();
-				
+			board[row][col].isVisited = true;
+			path.add(new int[] {row, col});
+			count[path.size() - 1] --;
+			updateDynamicDegree(row, col);
+			//for(int i = 0; i < path.size(); i++)		System.out.print(path.get(i)[0] + "," + path.get(i)[1] + " ");
+			//System.out.println();
+			//System.out.println("Path size == " + path.size());
+			numOfMoves--;
+			
+			//System.out.println("Current node is: " + row + "," + col);
+						
+			// Print the count list.
+			//System.out.print("count: ");
+			//for(int i = 0; i < count.length; i++)	System.out.print(count[i] + " ");
+			//System.out.println();
+						
+			if(path.size() == 65) {
+				//System.out.println("Enter the 64 part");
+				//System.out.println("Bad solution:");
+				//for(int i = 0; i < path.size(); i++)	System.out.print(path.get(i)[0] + "," + path.get(i)[1] + " ");
+				//System.out.println();
+				if(row == 2 && col == 3) {
+					res.add(new ArrayList<int[]>(path));
+					System.out.print(rightIndex + ": ");
+					for(int i = 0; i < path.size(); i++)	System.out.print(path.get(i)[0] + "," + path.get(i)[1] + " ");
+					System.out.println();
+					rightIndex++;
+				}
+				int index = path.size();
+				while(count[index] == 0) {
+					//System.out.println("Here is removing the node: " + path.get(path.size() - 1)[0] + "," + path.get(path.size() - 1)[1]);
+					board[path.get(path.size() - 1)[0]][path.get(path.size() - 1)[1]].isVisited = false;
+					path.remove(path.size() - 1); 
+					index--;
+				}
+				continue;
 			}
 			
-			curNode.isVisited = false;
-			preNode = curNode;
-			stack.pop();
-			path.remove(path.size() - 1);
-			System.out.println("Pop this node: " + curNode.row + "," + curNode.col);
-			numOfMoves++;
-			//updateDynamicDegree(row, col);
-			curNode = null; 			
+			List<int[]> validMoves = computeValidMoves(row, col, path.size());
+			if(validMoves.size() == 0) {
+				int index = path.size();
+				while(count[index] == 0) {
+					//System.out.println("Here is removing the node: " + path.get(path.size() - 1)[0] + "," + path.get(path.size() - 1)[1]);
+					if(path.size() == 0)		break;
+					board[path.get(path.size() - 1)[0]][path.get(path.size() - 1)[1]].isVisited = false;
+					path.remove(path.size() - 1); 
+					index--;
+				}
+				continue;
+			}
+			
+			List<int[]> minFixedDegreePos = decideTheNextPosition(validMoves, row, col);
+			
+			for(int index = 0; index < minFixedDegreePos.size(); index++) {
+				//System.out.println("The minFixedDegreePos: " + minFixedDegreePos.get(index)[0] + ", " + minFixedDegreePos.get(index)[1]);
+				Square nextNode = new Square(minFixedDegreePos.get(index)[0], minFixedDegreePos.get(index)[1]);
+				stack.push(nextNode);
+			}
+			//System.out.println("minFixedDegreePos.size() == " + minFixedDegreePos.size());
+			count[path.size()] = minFixedDegreePos.size();						
 		}
+		if(numOfMoves == 0)	System.out.println("All the results are here.");
 		return res;
 	}
 	
@@ -206,9 +184,9 @@ public class KnightsTour {
 		computeFixedDegrees();
 		res = strategies();
 		for(int i = 0; i < res.size(); i++) {
-			System.out.println("KT: " + sizeOfBoard + " x " + sizeOfBoard + " strategy = 1, start = 2,3");
-			System.out.print(i);
-			System.out.println(res.get(i));
+			//System.out.println("KT: " + sizeOfBoard + " x " + sizeOfBoard + " strategy = 1, start = 2,3");
+			//System.out.print(i);
+			//System.out.println(res.get(i));
 		}
 	}
 	
